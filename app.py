@@ -2,15 +2,35 @@ import streamlit as st
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
 
-# Must be the first Streamlit command
-st.set_page_config(page_title="AI Text Rephraser", layout="centered")
+# -------------------------------------------------
+# Page setup (must be first)
+# -------------------------------------------------
+st.set_page_config(
+    page_title="AI Text Rephraser",
+    page_icon="🪄",
+    layout="centered",
+)
 
-st.title("🪄 AI Text Rephraser")
-st.write("Enter any text below and get rephrased versions instantly!")
+# -------------------------------------------------
+# App Header
+# -------------------------------------------------
+st.markdown(
+    """
+    <h1 style='text-align: center; color: #4A90E2;'>🪄 AI Text Rephraser</h1>
+    <p style='text-align: center; color: gray;'>
+    Instantly generate fresh, natural rephrasings of any text.<br>
+    Powered by <b>Transformers</b> and <b>Streamlit</b>.
+    </p>
+    <hr>
+    """,
+    unsafe_allow_html=True
+)
 
+# -------------------------------------------------
+# Model loading (cached)
+# -------------------------------------------------
 @st.cache_resource
 def load_model():
-    """Load lightweight T5 paraphrasing model."""
     model_name = "ramsrigouthamg/t5_paraphraser"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
@@ -20,16 +40,21 @@ def load_model():
 
 tokenizer, model, device = load_model()
 
-# User input
-input_text = st.text_area("✍️ Enter your text:", height=200)
+# -------------------------------------------------
+# User Input
+# -------------------------------------------------
+st.markdown("### ✍️ Enter text to rephrase:")
+input_text = st.text_area("", placeholder="Type or paste your text here...", height=180)
 
-if st.button("Generate Rephrased Versions"):
+# -------------------------------------------------
+# Button + Logic
+# -------------------------------------------------
+if st.button("✨ Generate Rephrased Versions"):
     if input_text.strip():
-        with st.spinner("Rephrasing in progress..."):
-            # Handle short text intelligently
-            if len(input_text.split()) < 5:
-                st.warning("⚠️ Please enter a longer sentence (at least 5 words).")
-            else:
+        if len(input_text.split()) < 5:
+            st.warning("⚠️ Please enter a longer sentence (at least 5 words).")
+        else:
+            with st.spinner("🔄 Rephrasing your text... please wait"):
                 inputs = tokenizer(
                     f"paraphrase: {input_text}",
                     return_tensors="pt",
@@ -53,8 +78,37 @@ if st.button("Generate Rephrased Versions"):
                     for output in outputs
                 ]
 
-        st.markdown("### 🔹 Rephrased Versions:")
-        for i, text in enumerate(rephrased_versions, 1):
-            st.write(f"**{i}.** {text}")
+            st.success("✅ Rephrasing complete!")
+
+            st.markdown("### 🔹 Rephrased Versions:")
+            for i, text in enumerate(rephrased_versions, 1):
+                with st.container():
+                    st.markdown(
+                        f"""
+                        <div style="
+                            background-color:#F8F9FA;
+                            border-radius:10px;
+                            padding:15px;
+                            margin-top:10px;
+                            border-left:5px solid #4A90E2;">
+                            <b>Version {i}:</b><br>{text}
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+                    st.button(f"📋 Copy Version {i}", key=f"copy_{i}", on_click=st.write, args=(text,))
     else:
         st.warning("Please enter some text to rephrase!")
+
+# -------------------------------------------------
+# Footer
+# -------------------------------------------------
+st.markdown(
+    """
+    <hr>
+    <p style='text-align: center; color: gray; font-size: 0.9em;'>
+    Made with ❤️ using Streamlit & Hugging Face Transformers
+    </p>
+    """,
+    unsafe_allow_html=True
+)
