@@ -105,9 +105,7 @@ if st.button("✨ Generate Rephrased Versions"):
 st.markdown(
     """
     <hr>
-    <p style='text-align: center; color: gray; font-size: 0.9em;'>
-    Made with ❤️ using Streamlit & Hugging Face Transformers
-    </p>
+
     """,
     unsafe_allow_html=True
 )
