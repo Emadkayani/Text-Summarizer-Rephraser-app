@@ -1,4 +1,15 @@
-streamlit>=1.50.0
-transformers>=4.46.0
-torch>=2.3.0
-sentencepiece
+# Core app
+streamlit==1.39.0
+
+# Transformer model + dependencies
+transformers==4.46.2
+torch==2.4.1
+sentencepiece==0.2.0
+safetensors==0.4.4
+
+# Optional for performance and tokenization
+accelerate==1.0.1
+protobuf==5.28.2
+
+# UI safety & markdown rendering
+beautifulsoup4==4.12.3
