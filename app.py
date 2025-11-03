@@ -126,10 +126,10 @@ if st.session_state.rephrases:
                 <br>
                 <button 
                     onclick="navigator.clipboard.writeText(`{safe_version}`); 
-                             alert('✅ Verson {i} copied to clipboard!');"
+                             alert('✅ Version {i} copied to clipboard!');"
                     style="margin-top:8px; background-color:#4A90E2; color:white; border:none;
                            border-radius:6px; padding:6px 12px; cursor:pointer;">
-                    📋 Copy Version {i}
+                    📋 Copy Vesion {i}
                 </button>
             </div>
             """,
