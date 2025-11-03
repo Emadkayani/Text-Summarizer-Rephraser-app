@@ -18,8 +18,7 @@ st.markdown(
     """
     <h1 style='text-align: center; color: #4A90E2;'>🪄 AI Text Rephraser</h1>
     <p style='text-align: center; color: gray;'>
-    Instantly generate fresh, natural rephrasings of any text.<br>
-    Powered by <b>Transformers</b> and <b>Streamlit</b>.
+    Instantly generate fresh, natural rephrasings of any text.
     </p>
     <hr>
     """,
