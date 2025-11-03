@@ -118,24 +118,21 @@ if st.button("🔄 Rephrase"):
 if st.session_state.rephrases:
     st.markdown("### 🔹 Rephrased Versions:")
     for i, version in enumerate(st.session_state.rephrases, start=1):
+        safe_version = version.replace("`", "'").replace('"', "'")  # avoid quote issues
         st.markdown(
             f"""
             <div style='background-color:#F8F9FA; border-radius:8px; padding:12px; margin-top:8px;'>
-                <b>Version {i}:</b> {version}
+                <b>Version {i}:</b> {safe_version}
+                <br>
+                <button 
+                    onclick="navigator.clipboard.writeText(`{safe_version}`); 
+                             alert('✅ Version {i} copied to clipboard!');"
+                    style="margin-top:8px; background-color:#4A90E2; color:white; border:none;
+                           border-radius:6px; padding:6px 12px; cursor:pointer;">
+                    📋 Copy Version {i}
+                </button>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        copy_script = f"""
-        <script>
-        function copyToClipboard_{i}() {{
-            navigator.clipboard.writeText(`{version}`);
-            alert("✅ Version {i} copied to clipboard!");
-        }}
-        </script>
-        <button onclick="copyToClipboard_{i}()" style="margin-top:5px; background-color:#4A90E2; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;">
-            📋 Copy Version {i}
-        </button>
-        """
-        st.markdown(copy_script, unsafe_allow_html=True)
