@@ -21,60 +21,57 @@ tokenizer, model = load_model()
 st.set_page_config(page_title="AI Paraphraser", page_icon="✨", layout="centered")
 
 st.title("✨ AI Paraphraser")
-st.write("Generate multiple creative rephrasings for your sentence using a T5-based model.")
-
+st.write("Generate multiple creative rephrasings of your sentence using a T5-based AI model.")
 st.markdown("---")
 
-input_text = st.text_area("✍️ Enter your text here:", height=150, placeholder="Type a sentence or paragraph...")
+input_text = st.text_area("✍️ Enter text to rephrase:", height=150, placeholder="Type or paste a sentence or paragraph...")
 
 if st.button("🔄 Rephrase"):
     if input_text.strip():
         with st.spinner("Rephrasing your text... please wait ⏳"):
-            # Strong prompt for creativity
-            prompt = (
-                f"Paraphrase the following sentence in 5 different creative ways:\n"
-                f"\"{input_text}\"\n\n"
-                "Each paraphrase should use different vocabulary and sentence structure while keeping the same meaning."
-            )
+            # Prepare model input correctly (no long instruction)
+            text = "paraphrase: " + input_text
 
             inputs = tokenizer(
-                prompt,
+                text,
                 return_tensors="pt",
-                padding="longest",
+                padding=True,
                 truncation=True,
                 max_length=512
             ).to(model.device)
 
-            # Generate multiple paraphrases
+            # Generate diverse paraphrases
             outputs = model.generate(
                 **inputs,
                 max_length=128,
-                num_return_sequences=10,   # generate extra for variety
+                num_beams=5,
+                num_return_sequences=5,
                 do_sample=True,
-                temperature=1.3,           # increase randomness
-                top_k=100,
-                top_p=0.9,
-                repetition_penalty=3.0,
-                diversity_penalty=1.5,
+                temperature=1.3,
+                top_k=120,
+                top_p=0.95,
+                repetition_penalty=2.5,
                 early_stopping=True
             )
 
-            # Decode and remove duplicates
             decoded = [tokenizer.decode(o, skip_special_tokens=True).strip() for o in outputs]
-            rephrased_versions = []
+
+            # Filter duplicates and irrelevant outputs
+            rephrased = []
             for d in decoded:
-                if d and d.lower() not in [r.lower() for r in rephrased_versions]:
-                    rephrased_versions.append(d)
-                if len(rephrased_versions) >= 3:
+                if d and d.lower() != input_text.lower() and d not in rephrased:
+                    rephrased.append(d)
+                if len(rephrased) >= 3:
                     break
 
-        st.success("✅ Paraphrasing complete!")
-
+        st.success("✅ Rephrasing complete!")
         st.markdown("### ✨ Rephrased Versions:")
-        for i, version in enumerate(rephrased_versions, 1):
-            st.markdown(f"**Version {i}:** {version}")
+        if rephrased:
+            for i, version in enumerate(rephrased, 1):
+                st.markdown(f"**Version {i}:** {version}")
+        else:
+            st.warning("⚠️ The model couldn't generate distinct rephrasings. Try rephrasing a slightly longer text.")
     else:
         st.warning("⚠️ Please enter some text first.")
 
-st.markdown("---")
 
