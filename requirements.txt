@@ -1,7 +1,7 @@
-# Core App
+# Core app
 streamlit==1.51.0
 
-# Model and Transformers
+# Hugging Face Transformers + dependencies
 transformers==4.46.2
 torch==2.9.0
 sentencepiece==0.2.1
@@ -9,5 +9,5 @@ safetensors==0.6.2
 accelerate==1.11.0
 protobuf==6.33.0
 
-# Optional (for UI and stability)
+# Optional utilities for HTML and markdown rendering
 beautifulsoup4==4.12.3
