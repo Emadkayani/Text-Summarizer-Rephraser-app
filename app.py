@@ -2,114 +2,79 @@ import streamlit as st
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
 
-# -------------------------------------------------
-# Page Configuration
-# -------------------------------------------------
-st.set_page_config(
-    page_title="AI Text Rephraser",
-    page_icon="🪄",
-    layout="centered",
-)
-
-# -------------------------------------------------
-# App Header
-# -------------------------------------------------
-st.markdown(
-    """
-    <h1 style='text-align: center; color: #4A90E2;'>🪄 AI Text Rephraser</h1>
-    <p style='text-align: center; color: gray;'>
-    Instantly generate unique, natural rephrasings of any text.
-    </p>
-    <hr>
-    """,
-    unsafe_allow_html=True
-)
-
-# -------------------------------------------------
-# Load Model (cached for performance)
-# -------------------------------------------------
+# -----------------------------
+# Load model and tokenizer
+# -----------------------------
 @st.cache_resource
 def load_model():
-    # 🔹 Choose a model: (Uncomment one)
-    # model_name = "ramsrigouthamg/t5_paraphraser"  # fast, small, basic
-    model_name = "Vamsi/T5_Paraphrase_Paws"        # better quality and diversity
-
+    model_name = "prithivida/parrot_paraphraser_on_T5"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = model.to(device)
-    return tokenizer, model, device
+    model = model.to("cuda" if torch.cuda.is_available() else "cpu")
+    return tokenizer, model
 
-tokenizer, model, device = load_model()
+tokenizer, model = load_model()
 
-# -------------------------------------------------
-# User Input
-# -------------------------------------------------
-st.markdown("### ✍️ Enter text to rephrase:")
-input_text = st.text_area("", placeholder="Type or paste your text here...", height=180)
+# -----------------------------
+# Streamlit UI setup
+# -----------------------------
+st.set_page_config(page_title="AI Paraphraser", page_icon="✨", layout="centered")
 
-# -------------------------------------------------
-# Rephrasing Logic
-# -------------------------------------------------
-if st.button("✨ Generate Rephrased Versions"):
+st.title("✨ AI Paraphraser")
+st.write("Generate multiple creative rephrasings for your sentence using a T5-based model.")
+
+st.markdown("---")
+
+input_text = st.text_area("✍️ Enter your text here:", height=150, placeholder="Type a sentence or paragraph...")
+
+if st.button("🔄 Rephrase"):
     if input_text.strip():
-        if len(input_text.split()) < 5:
-            st.warning("⚠️ Please enter a longer sentence (at least 5 words).")
-        else:
-            with st.spinner("🔄 Rephrasing your text... please wait"):
-                prompt = (
-                    f"paraphrase this in different ways: {input_text}. "
-                    "Each version should use new words or phrasing but keep the same meaning."
-                )
+        with st.spinner("Rephrasing your text... please wait ⏳"):
+            # Strong prompt for creativity
+            prompt = (
+                f"Paraphrase the following sentence in 5 different creative ways:\n"
+                f"\"{input_text}\"\n\n"
+                "Each paraphrase should use different vocabulary and sentence structure while keeping the same meaning."
+            )
 
-                inputs = tokenizer(
-                    prompt,
-                    return_tensors="pt",
-                    padding="longest",
-                    truncation=True,
-                    max_length=256
-                ).to(model.device)
+            inputs = tokenizer(
+                prompt,
+                return_tensors="pt",
+                padding="longest",
+                truncation=True,
+                max_length=512
+            ).to(model.device)
 
-                outputs = model.generate(
-                    **inputs,
-                    max_length=256,
-                    num_return_sequences=5,
-                    do_sample=True,
-                    temperature=1.1,
-                    top_k=80,
-                    top_p=0.92,
-                    repetition_penalty=2.5,
-                    early_stopping=True
-                )
+            # Generate multiple paraphrases
+            outputs = model.generate(
+                **inputs,
+                max_length=128,
+                num_return_sequences=10,   # generate extra for variety
+                do_sample=True,
+                temperature=1.3,           # increase randomness
+                top_k=100,
+                top_p=0.9,
+                repetition_penalty=3.0,
+                diversity_penalty=1.5,
+                early_stopping=True
+            )
 
-                # Decode & remove duplicates
-                rephrased_versions = list({
-                    tokenizer.decode(output, skip_special_tokens=True).strip()
-                    for output in outputs
-                })
+            # Decode and remove duplicates
+            decoded = [tokenizer.decode(o, skip_special_tokens=True).strip() for o in outputs]
+            rephrased_versions = []
+            for d in decoded:
+                if d and d.lower() not in [r.lower() for r in rephrased_versions]:
+                    rephrased_versions.append(d)
+                if len(rephrased_versions) >= 3:
+                    break
 
-            st.success("✅ Rephrasing complete!")
+        st.success("✅ Paraphrasing complete!")
 
-            if not rephrased_versions:
-                st.warning("Model couldn't produce diverse outputs. Try rephrasing a longer sentence.")
-            else:
-                st.markdown("### 🔹 Rephrased Versions:")
-                for i, text in enumerate(rephrased_versions, 1):
-                    with st.container():
-                        st.markdown(
-                            f"""
-                            <div style="
-                                background-color:#F8F9FA;
-                                border-radius:10px;
-                                padding:15px;
-                                margin-top:10px;
-                                border-left:5px solid #4A90E2;">
-                                <b>Version {i}:</b><br>{text}
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-                        st.button(f"📋 Copy Version {i}", key=f"copy_{i}")
+        st.markdown("### ✨ Rephrased Versions:")
+        for i, version in enumerate(rephrased_versions, 1):
+            st.markdown(f"**Version {i}:** {version}")
     else:
-        st.warning("Please enter some text to rephrase!")
+        st.warning("⚠️ Please enter some text first.")
+
+st.markdown("---")
 
