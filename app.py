@@ -3,7 +3,7 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
 
 # ——————————————————————————————
-# Page config (must be first streamlit command)
+# Page config (must be first)
 # ——————————————————————————————
 st.set_page_config(
     page_title="AI Text Rephraser",
@@ -48,15 +48,17 @@ input_text = st.text_area(
 )
 
 # ——————————————————————————————
-# Generation logic encapsulated
+# Generation logic
 # ——————————————————————————————
-def generate_rephrases(text: str,
-                       num_return_sequences: int = 5,
-                       max_length: int = 128,
-                       temperature: float = 1.2,
-                       top_k: int = 100,
-                       top_p: float = 0.95,
-                       repetition_penalty: float = 2.5) -> list[str]:
+def generate_rephrases(
+    text: str,
+    num_return_sequences: int = 5,
+    max_length: int = 128,
+    temperature: float = 1.2,
+    top_k: int = 100,
+    top_p: float = 0.95,
+    repetition_penalty: float = 2.5,
+) -> list[str]:
     prompt = f"paraphrase: {text}"
     inputs = tokenizer(
         prompt,
@@ -76,11 +78,10 @@ def generate_rephrases(text: str,
         top_p=top_p,
         repetition_penalty=repetition_penalty,
         early_stopping=True,
-        num_beams=1  # enforce pure sampling
+        num_beams=1
     )
 
     decoded = [tokenizer.decode(o, skip_special_tokens=True).strip() for o in outputs]
-    # Filter duplicates and same as input (case-insensitive)
     unique = []
     for d in decoded:
         if d and d.lower() != text.lower() and d.lower() not in (u.lower() for u in unique):
@@ -90,7 +91,13 @@ def generate_rephrases(text: str,
     return unique
 
 # ——————————————————————————————
-# Main UI interaction
+# State Management
+# ——————————————————————————————
+if "rephrases" not in st.session_state:
+    st.session_state.rephrases = []
+
+# ——————————————————————————————
+# Main UI
 # ——————————————————————————————
 if st.button("🔄 Rephrase"):
     if not input_text.strip():
@@ -99,19 +106,36 @@ if st.button("🔄 Rephrase"):
         st.warning("⚠️ Please enter a longer text (at least 6 words) for meaningful rephrasing.")
     else:
         with st.spinner("🌀 Generating rewrites..."):
-            rephrases = generate_rephrases(input_text)
-        if not rephrases:
+            st.session_state.rephrases = generate_rephrases(input_text)
+        if not st.session_state.rephrases:
             st.error("❗ Could not generate distinct rewrites. Try a different sentence or longer text.")
         else:
             st.success("✅ Rephrasing complete!")
-            st.markdown("### 🔹 Rephrased Versions:")
-            for i, version in enumerate(rephrases, start=1):
-                st.markdown(
-                    f"<div style='background-color:#F8F9FA; border-radius:8px; padding:12px; margin-top:8px;'>"
-                    f"<b>Version {i}:</b> {version}"
-                    "</div>",
-                    unsafe_allow_html=True
-                )
-                st.button(f"📋 Copy Version {i}", key=f"copy_{i}", help="Copy this version to clipboard")
 
+# ——————————————————————————————
+# Display Results with Copy Buttons
+# ——————————————————————————————
+if st.session_state.rephrases:
+    st.markdown("### 🔹 Rephrased Versions:")
+    for i, version in enumerate(st.session_state.rephrases, start=1):
+        st.markdown(
+            f"""
+            <div style='background-color:#F8F9FA; border-radius:8px; padding:12px; margin-top:8px;'>
+                <b>Version {i}:</b> {version}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
+        copy_script = f"""
+        <script>
+        function copyToClipboard_{i}() {{
+            navigator.clipboard.writeText(`{version}`);
+            alert("✅ Version {i} copied to clipboard!");
+        }}
+        </script>
+        <button onclick="copyToClipboard_{i}()" style="margin-top:5px; background-color:#4A90E2; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;">
+            📋 Copy Version {i}
+        </button>
+        """
+        st.markdown(copy_script, unsafe_allow_html=True)
